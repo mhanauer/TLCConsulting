@@ -12,9 +12,13 @@ Then there is level the two slope which has the constant effect, plus the slope 
 
 $$ Level~2~Slope~Time:~~~{\beta_{1j} = \gamma_{10} + \gamma_{11}Intervention1_{j} +  \gamma_{12}Intervention2_{j} + u_{1j}} ~~~ (1.3)$$
 
+
 Then we have the mixed model, which has all the components combined
-$$Mixed~model: ~~~{y_{ij} =   (\gamma_{00}+ \gamma_{01}Intervention_{j} + u_{0j}) + (\gamma_{10}}+\gamma_{11}Intervention1_{j} +\gamma_{12}Intervention2_{j} +u_{1j})*Time_{ij} + e_{ij} $$
+$$Mixed~model: ~~~{y_{ij} =   (\gamma_{00}+ \gamma_{01}Intervention_{j} +  \gamma_{02}Intervention_{j} + u_{0j}) + (\gamma_{10}}+\gamma_{11}Intervention1_{j} +\gamma_{12}Intervention2_{j} +u_{1j})*Time_{ij} + e_{ij} $$
+
 Here I am creating the data, which has 600 peoeple over two time points (pre and post), over three treatments.  I am only including two treatments, because I need to measure the two (1 versus 2 and 3; 2 versus 1 and 3) to answer my research questions for this design.
+
+So run the regression with the dicotmous vars.  Then change then intervention variable to a,b,c?
 ```{r}
 n = 600
 timepoints = 2
@@ -25,6 +29,7 @@ intervention = sample(treat, replace = TRUE, prob = c(.3, .4, .3), n)
 intervention = rep(intervention, each = 2)
 intervention1 = ifelse(intervention == 1, 1, 0)
 intervention2 = ifelse(intervention ==2, 1, 0)
+intervention3 = ifelse(intervention ==3, 1, 0)
 ```
 I am assuming I have an outcome that is normally distributed and in standard normal form.     
 
@@ -65,18 +70,21 @@ y1 = (intercept + randomEffects$Int[subject])+(slopeT1 + slopeT2 +randomEffects$
 d = data.frame(subject, time, intervention1, intervention2, y1)
 head(d)
 ```
-Generate the data using the model that has the intervention effect that I want with time nested within participants.
+Ok so I think was misinterpreting this.  Treatment two and three are compared to treatment one.  Therefore the only extra contrast that I want is two versus three, so I can set that up using the code below, which I found in the nlme codebook.
 ```{r}
+attach(d)
+intervention = as.factor(intervention)
+time = as.factor(ifelse(time == 1, "Post", "Pre"))
 library(nlme)
-model1 = lme(y1 ~ time + intervention2*time + intervention1*time, random =~ time | subject, data = d)
+model1 = lme(y1 ~ intervention*time, random =~ time | subject, data = d)
 summary(model1)
+anova(model1, L = c("intervention3:time" = 1, "intervention2:time" = -1))
 ```
-Now I am struggling with finding an ANOVA package that can handle unbalanced groups and repeated measures.  The closest thing I can find is the ezANOVA package, but it is telling me that it cannot handle unbalanced designs and to use exMixed instead.  I am fine with multilevel modeling, but the actual data set that I have only has about 115 people across two-time points so I am a little worried about power particularly since we are comparing three different interventions and just an intervention versus control.
+  
 ```{r}
-library(ez)
-ezANOVA(data = d, dv = .(y1), wid = .(subject), within = .(time), between = .(intervention1), type = 3)
 
 ```
+
 
 
 
